@@ -728,39 +728,24 @@
 
     function kembaliDashboard() {
 
+  if (scanner) {
 
-      if (scanner) {
+    scanner.stop()
+      .catch(function() {});
 
+  }
 
-        scanner.stop()
+  const url =
+    APPS_SCRIPT_URL +
+    "?page=dashboardAdmin" +
+    "&idAdmin=" +
+    encodeURIComponent(idAdmin) +
+    "&namaAdmin=" +
+    encodeURIComponent(namaAdmin);
 
-          .catch(
-            function() {}
-          );
+  window.location.href = url;
 
-      }
-
-
-      if (
-        document.referrer
-      ) {
-
-
-        window.history.back();
-
-
-      }
-
-      else {
-
-
-        window.location.href =
-          APPS_SCRIPT_URL;
-
-      }
-
-    }
-
+}
 
     /* =====================================================
        JALANKAN KAMERA OTOMATIS
