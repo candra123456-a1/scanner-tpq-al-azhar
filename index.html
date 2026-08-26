@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
+
   <meta charset="UTF-8">
 
   <meta name="viewport"
@@ -154,9 +156,12 @@
     }
 
   </style>
+
 </head>
 
+
 <body>
+
 
   <!-- HEADER -->
 
@@ -173,12 +178,14 @@
   </div>
 
 
+  <!-- CONTENT -->
+
   <div class="container">
 
     <div class="scanner-card">
 
 
-      <!-- INFO ADMIN -->
+      <!-- ADMIN -->
 
       <div class="admin-info">
 
@@ -193,6 +200,8 @@
       </div>
 
 
+      <!-- TITLE -->
+
       <div class="scanner-title">
 
         📷 Scan QR Santri
@@ -200,10 +209,12 @@
       </div>
 
 
-      <!-- TEMPAT KAMERA -->
+      <!-- CAMERA -->
 
       <div id="qr-reader"></div>
 
+
+      <!-- STATUS -->
 
       <div
         class="status"
@@ -223,7 +234,7 @@
       </div>
 
 
-      <!-- KEMBALI -->
+      <!-- BACK -->
 
       <button
         class="back-button"
@@ -237,9 +248,12 @@
     </div>
 
 
+    <!-- FOOTER -->
+
     <div class="footer">
 
-      Digital TPQ Al Azhar<br>
+      Digital TPQ Al Azhar
+      <br>
 
       Developer:
       <strong>Candra Abu Abraham</strong>
@@ -251,8 +265,9 @@
 
   <script>
 
+
     /* =====================================================
-       URL GOOGLE APPS SCRIPT
+       GOOGLE APPS SCRIPT
     ===================================================== */
 
     const APPS_SCRIPT_URL =
@@ -264,19 +279,26 @@
     ===================================================== */
 
     const params =
-      new URLSearchParams(window.location.search);
+      new URLSearchParams(
+        window.location.search
+      );
+
 
     const idAdmin =
       params.get("idAdmin") || "";
+
 
     const namaAdmin =
       params.get("namaAdmin") || "";
 
 
-    document.getElementById("idAdmin").innerText =
+    document.getElementById("idAdmin")
+      .innerText =
       idAdmin || "-";
 
-    document.getElementById("namaAdmin").innerText =
+
+    document.getElementById("namaAdmin")
+      .innerText =
       namaAdmin || "-";
 
 
@@ -298,36 +320,50 @@
       const hasil =
         document.getElementById("hasil");
 
-      hasil.className = "hasil";
+
+      hasil.className =
+        "hasil";
 
 
-      if (result.sukses) {
+      if (result && result.sukses) {
 
-        hasil.classList.add("berhasil");
+        hasil.classList.add(
+          "berhasil"
+        );
+
 
         hasil.innerHTML =
 
           "✅ <strong>ABSENSI BERHASIL</strong>" +
 
           '<div class="nama-santri">' +
+
           aman(result.namaSantri) +
+
           "</div>" +
 
           '<div class="detail">' +
 
           "ID Santri: " +
+
           aman(result.idSantri) +
+
           "<br>" +
 
           "Tanggal: " +
+
           aman(result.tanggal) +
+
           "<br>" +
 
           "Jam: " +
+
           aman(result.jamDatang) +
+
           "<br>" +
 
           "Status: " +
+
           aman(result.status) +
 
           "</div>";
@@ -336,7 +372,10 @@
 
       else {
 
-        hasil.classList.add("gagal");
+        hasil.classList.add(
+          "gagal"
+        );
+
 
         hasil.innerHTML =
 
@@ -344,7 +383,11 @@
 
           '<div class="detail">' +
 
-          aman(result.pesan) +
+          aman(
+            result && result.pesan
+              ? result.pesan
+              : "QR tidak dapat diproses."
+          ) +
 
           "</div>";
 
@@ -354,71 +397,159 @@
 
 
     /* =====================================================
-       KIRIM QR KE APPS SCRIPT
+       KIRIM QR KE GOOGLE APPS SCRIPT
     ===================================================== */
 
     function hasilScan(idQR) {
 
+
       if (sedangProses) {
+
         return;
+
       }
+
 
       sedangProses = true;
 
-      document.getElementById("status").innerText =
+
+      document.getElementById("status")
+        .innerText =
         "⏳ Memproses absensi...";
 
 
-      fetch(APPS_SCRIPT_URL, {
+      const data = {
 
-        method: "POST",
+        aksi: "prosesScanQR",
 
-        headers: {
-          "Content-Type": "text/plain;charset=utf-8"
-        },
+        idQR: idQR,
 
-        body: JSON.stringify({
+        idAdmin: idAdmin,
 
-          aksi: "prosesScanQR",
+        namaAdmin: namaAdmin
 
-          idQR: idQR,
+      };
 
-          idAdmin: idAdmin,
 
-          namaAdmin: namaAdmin
+      fetch(
 
-        })
+        APPS_SCRIPT_URL,
 
-      })
+        {
+
+          method: "POST",
+
+          mode: "cors",
+
+          redirect: "follow",
+
+          headers: {
+
+            "Content-Type":
+              "text/plain;charset=utf-8"
+
+          },
+
+          body:
+            JSON.stringify(data)
+
+        }
+
+      )
+
 
       .then(function(response) {
 
-        return response.json();
+
+        if (!response.ok) {
+
+          throw new Error(
+
+            "Server error HTTP " +
+            response.status
+
+          );
+
+        }
+
+
+        return response.text();
 
       })
 
-      .then(function(result) {
 
-        tampilkanHasil(result);
+      .then(function(text) {
 
-        document.getElementById("status").innerText =
+
+        console.log(
+          "RESPON APPS SCRIPT:",
+          text
+        );
+
+
+        let result;
+
+
+        try {
+
+          result =
+            JSON.parse(text);
+
+        }
+
+        catch (error) {
+
+          throw new Error(
+
+            "Respon Apps Script bukan JSON."
+
+          );
+
+        }
+
+
+        tampilkanHasil(
+          result
+        );
+
+
+        document.getElementById("status")
+          .innerText =
           "📷 Siap scan QR berikutnya";
 
-        setTimeout(function() {
 
-          sedangProses = false;
+        setTimeout(
 
-        }, 2500);
+          function() {
+
+            sedangProses =
+              false;
+
+          },
+
+          2500
+
+        );
 
       })
 
+
       .catch(function(error) {
+
+
+        console.error(
+          "ERROR SCAN:",
+          error
+        );
+
 
         const hasil =
           document.getElementById("hasil");
 
+
         hasil.className =
           "hasil gagal";
+
 
         hasil.innerHTML =
 
@@ -426,14 +557,28 @@
 
           '<div class="detail">' +
 
+          "QR terbaca: " +
+
+          "<strong>" +
+
+          aman(idQR) +
+
+          "</strong>" +
+
+          "<br><br>" +
+
           aman(error.message) +
 
           "</div>";
 
-        document.getElementById("status").innerText =
+
+        document.getElementById("status")
+          .innerText =
           "⚠️ Gagal menghubungi server";
 
-        sedangProses = false;
+
+        sedangProses =
+          false;
 
       });
 
@@ -441,20 +586,29 @@
 
 
     /* =====================================================
-       MULAI KAMERA
+       MULAI SCANNER
     ===================================================== */
 
     function mulaiScanner() {
 
-      document.getElementById("status").innerText =
+
+      document.getElementById("status")
+        .innerText =
         "📷 Meminta izin kamera...";
 
 
-      if (typeof Html5Qrcode === "undefined") {
+      if (
+        typeof Html5Qrcode ===
+        "undefined"
+      ) {
+
 
         tampilkanError(
+
           "Library scanner tidak berhasil dimuat."
+
         );
+
 
         return;
 
@@ -462,7 +616,9 @@
 
 
       scanner =
-        new Html5Qrcode("qr-reader");
+        new Html5Qrcode(
+          "qr-reader"
+        );
 
 
       const config = {
@@ -470,8 +626,11 @@
         fps: 10,
 
         qrbox: {
+
           width: 250,
+
           height: 250
+
         },
 
         aspectRatio: 1.0
@@ -482,70 +641,122 @@
       scanner.start(
 
         {
+
           facingMode: {
-            exact: "environment"
+
+            exact:
+              "environment"
+
           }
+
         },
 
         config,
 
+
         function(decodedText) {
 
-          hasilScan(decodedText);
+
+          hasilScan(
+            decodedText
+          );
+
 
         },
 
+
         function(errorMessage) {
 
-          // Frame yang belum berhasil membaca QR diabaikan.
+          // Frame yang belum membaca QR diabaikan.
 
         }
 
       )
 
+
       .then(function() {
 
-        document.getElementById("status").innerText =
+
+        document.getElementById("status")
+          .innerText =
+
           "📷 Kamera aktif — arahkan ke QR Santri";
+
 
       })
 
+
       .catch(function(error) {
 
-        console.log(error);
 
-        /* Coba kamera belakang dengan mode biasa */
+        console.log(
+          "Kamera exact gagal:",
+          error
+        );
+
+
+        /* -----------------------------------------------
+           COBA KAMERA BELAKANG BIASA
+        ----------------------------------------------- */
+
 
         scanner.start(
 
           {
-            facingMode: "environment"
+
+            facingMode:
+              "environment"
+
           },
 
           config,
 
+
           function(decodedText) {
 
-            hasilScan(decodedText);
+            hasilScan(
+              decodedText
+            );
 
           },
 
-          function(errorMessage) {}
+
+          function(errorMessage) {
+
+            // Abaikan frame gagal scan.
+
+          }
 
         )
 
+
         .then(function() {
 
-          document.getElementById("status").innerText =
+
+          document.getElementById("status")
+            .innerText =
+
             "📷 Kamera aktif — arahkan ke QR Santri";
+
 
         })
 
+
         .catch(function(error2) {
 
+
+          console.log(
+            "Kamera gagal:",
+            error2
+          );
+
+
           tampilkanError(
+
             "Kamera tidak dapat dibuka.<br><br>" +
+
             "Pastikan izin kamera browser sudah diberikan."
+
           );
 
         });
@@ -556,16 +767,19 @@
 
 
     /* =====================================================
-       ERROR KAMERA
+       ERROR
     ===================================================== */
 
     function tampilkanError(pesan) {
 
+
       const hasil =
         document.getElementById("hasil");
 
+
       hasil.className =
         "hasil gagal";
+
 
       hasil.innerHTML =
 
@@ -577,7 +791,9 @@
 
         "</div>";
 
-      document.getElementById("status").innerText =
+
+      document.getElementById("status")
+        .innerText =
         "⚠️ Kamera belum aktif";
 
     }
@@ -589,11 +805,18 @@
 
     function aman(text) {
 
+
       const div =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
+
 
       div.textContent =
-        text == null ? "" : String(text);
+        text == null
+          ? ""
+          : String(text);
+
 
       return div.innerHTML;
 
@@ -601,26 +824,36 @@
 
 
     /* =====================================================
-       KEMBALI KE DASHBOARD
+       KEMBALI DASHBOARD
     ===================================================== */
 
     function kembaliDashboard() {
 
+
       if (scanner) {
 
+
         scanner.stop()
-          .catch(function() {});
+
+          .catch(
+            function() {}
+          );
 
       }
 
 
-      if (document.referrer) {
+      if (
+        document.referrer
+      ) {
+
 
         window.history.back();
+
 
       }
 
       else {
+
 
         window.location.href =
           APPS_SCRIPT_URL;
@@ -631,23 +864,35 @@
 
 
     /* =====================================================
-       JALANKAN KAMERA
+       JALANKAN KAMERA OTOMATIS
     ===================================================== */
 
     window.addEventListener(
+
       "load",
+
       function() {
 
-        setTimeout(function() {
 
-          mulaiScanner();
+        setTimeout(
 
-        }, 500);
+          function() {
+
+            mulaiScanner();
+
+          },
+
+          500
+
+        );
 
       }
+
     );
+
 
   </script>
 
 </body>
+
 </html>
