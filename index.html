@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
+
+  <title>Scanner QR - TPQ Al Azhar</title>
+
+  <!-- LIBRARY QR SCANNER -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/dist/html5-qrcode.min.js"></script>
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #f4f7fb;
+      color: #333;
+    }
+
+    .header {
+      background: linear-gradient(
+        135deg,
+        #0d47a1,
+        #1976d2
+      );
+
+      color: white;
+      padding: 18px 20px;
+      text-align: center;
+
+      box-shadow:
+        0 4px 15px rgba(0,0,0,0.15);
+    }
+
+    .header h1 {
+      margin: 0 0 5px;
+      font-size: 22px;
+    }
+
+    .header p {
+      margin: 0;
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 500px;
+      margin: 20px auto;
+      padding: 0 15px;
+    }
+
+    .scanner-card {
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+
+      box-shadow:
+        0 5px 20px rgba(0,0,0,0.08);
+    }
+
+    .admin-info {
+      background: #f4f7fb;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 18px;
+      font-size: 13px;
+    }
+
+    .admin-info strong {
+      color: #0d47a1;
+    }
+
+    .scanner-title {
+      text-align: center;
+      color: #0d47a1;
+      font-size: 19px;
+      margin-bottom: 15px;
+    }
+
+    #qr-reader {
+      width: 100%;
+      overflow: hidden;
+      border-radius: 14px;
+    }
+
+    .status {
+      text-align: center;
+      margin: 15px 0;
+      font-size: 13px;
+      color: #777;
+    }
+
+    .hasil {
+      margin-top: 18px;
+      padding: 15px;
+      border-radius: 12px;
+      display: none;
+      text-align: center;
+    }
+
+    .hasil.berhasil {
+      display: block;
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .hasil.gagal {
+      display: block;
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    .nama-santri {
+      font-size: 20px;
+      font-weight: bold;
+      margin: 8px 0;
+    }
+
+    .detail {
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .back-button {
+      margin-top: 18px;
+      width: 100%;
+      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      background: #757575;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .back-button:hover {
+      opacity: 0.9;
+    }
+
+    .footer {
+      text-align: center;
+      margin: 25px 0 20px;
+      color: #999;
+      font-size: 10px;
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <!-- HEADER -->
+
+  <div class="header">
+
+    <h1>
+      TPQ AL AZHAR
+    </h1>
+
+    <p>
+      Scanner QR Absensi Santri
+    </p>
+
+  </div>
+
+
+  <div class="container">
+
+    <div class="scanner-card">
+
+
+      <!-- INFO ADMIN -->
+
+      <div class="admin-info">
+
+        Admin:
+        <strong id="namaAdmin">-</strong>
+
+        <br>
+
+        ID Admin:
+        <strong id="idAdmin">-</strong>
+
+      </div>
+
+
+      <div class="scanner-title">
+
+        📷 Scan QR Santri
+
+      </div>
+
+
+      <!-- TEMPAT KAMERA -->
+
+      <div id="qr-reader"></div>
+
+
+      <div
+        class="status"
+        id="status">
+
+        ⏳ Menyiapkan kamera...
+
+      </div>
+
+
+      <!-- HASIL -->
+
+      <div
+        class="hasil"
+        id="hasil">
+
+      </div>
+
+
+      <!-- KEMBALI -->
+
+      <button
+        class="back-button"
+        onclick="kembaliDashboard()">
+
+        ← Kembali ke Dashboard
+
+      </button>
+
+
+    </div>
+
+
+    <div class="footer">
+
+      Digital TPQ Al Azhar<br>
+
+      Developer:
+      <strong>Candra Abu Abraham</strong>
+
+    </div>
+
+  </div>
+
+
+  <script>
+
+    /* =====================================================
+       URL GOOGLE APPS SCRIPT
+    ===================================================== */
+
+    const APPS_SCRIPT_URL =
+      "https://script.google.com/macros/s/AKfycbw2s94YDuc9eMqVJU4vzrYMDiOdD8ErcSxYhmu1oFDBYGorDbI8sH4LRMyhpNBz3V6K-g/exec";
+
+
+    /* =====================================================
+       DATA ADMIN DARI URL
+    ===================================================== */
+
+    const params =
+      new URLSearchParams(window.location.search);
+
+    const idAdmin =
+      params.get("idAdmin") || "";
+
+    const namaAdmin =
+      params.get("namaAdmin") || "";
+
+
+    document.getElementById("idAdmin").innerText =
+      idAdmin || "-";
+
+    document.getElementById("namaAdmin").innerText =
+      namaAdmin || "-";
+
+
+    /* =====================================================
+       VARIABEL
+    ===================================================== */
+
+    let scanner = null;
+
+    let sedangProses = false;
+
+
+    /* =====================================================
+       TAMPILKAN HASIL
+    ===================================================== */
+
+    function tampilkanHasil(result) {
+
+      const hasil =
+        document.getElementById("hasil");
+
+      hasil.className = "hasil";
+
+
+      if (result.sukses) {
+
+        hasil.classList.add("berhasil");
+
+        hasil.innerHTML =
+
+          "✅ <strong>ABSENSI BERHASIL</strong>" +
+
+          '<div class="nama-santri">' +
+          aman(result.namaSantri) +
+          "</div>" +
+
+          '<div class="detail">' +
+
+          "ID Santri: " +
+          aman(result.idSantri) +
+          "<br>" +
+
+          "Tanggal: " +
+          aman(result.tanggal) +
+          "<br>" +
+
+          "Jam: " +
+          aman(result.jamDatang) +
+          "<br>" +
+
+          "Status: " +
+          aman(result.status) +
+
+          "</div>";
+
+      }
+
+      else {
+
+        hasil.classList.add("gagal");
+
+        hasil.innerHTML =
+
+          "❌ <strong>ABSENSI GAGAL</strong>" +
+
+          '<div class="detail">' +
+
+          aman(result.pesan) +
+
+          "</div>";
+
+      }
+
+    }
+
+
+    /* =====================================================
+       KIRIM QR KE APPS SCRIPT
+    ===================================================== */
+
+    function hasilScan(idQR) {
+
+      if (sedangProses) {
+        return;
+      }
+
+      sedangProses = true;
+
+      document.getElementById("status").innerText =
+        "⏳ Memproses absensi...";
+
+
+      fetch(APPS_SCRIPT_URL, {
+
+        method: "POST",
+
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+
+        body: JSON.stringify({
+
+          aksi: "prosesScanQR",
+
+          idQR: idQR,
+
+          idAdmin: idAdmin,
+
+          namaAdmin: namaAdmin
+
+        })
+
+      })
+
+      .then(function(response) {
+
+        return response.json();
+
+      })
+
+      .then(function(result) {
+
+        tampilkanHasil(result);
+
+        document.getElementById("status").innerText =
+          "📷 Siap scan QR berikutnya";
+
+        setTimeout(function() {
+
+          sedangProses = false;
+
+        }, 2500);
+
+      })
+
+      .catch(function(error) {
+
+        const hasil =
+          document.getElementById("hasil");
+
+        hasil.className =
+          "hasil gagal";
+
+        hasil.innerHTML =
+
+          "❌ <strong>TERJADI KESALAHAN</strong>" +
+
+          '<div class="detail">' +
+
+          aman(error.message) +
+
+          "</div>";
+
+        document.getElementById("status").innerText =
+          "⚠️ Gagal menghubungi server";
+
+        sedangProses = false;
+
+      });
+
+    }
+
+
+    /* =====================================================
+       MULAI KAMERA
+    ===================================================== */
+
+    function mulaiScanner() {
+
+      document.getElementById("status").innerText =
+        "📷 Meminta izin kamera...";
+
+
+      if (typeof Html5Qrcode === "undefined") {
+
+        tampilkanError(
+          "Library scanner tidak berhasil dimuat."
+        );
+
+        return;
+
+      }
+
+
+      scanner =
+        new Html5Qrcode("qr-reader");
+
+
+      const config = {
+
+        fps: 10,
+
+        qrbox: {
+          width: 250,
+          height: 250
+        },
+
+        aspectRatio: 1.0
+
+      };
+
+
+      scanner.start(
+
+        {
+          facingMode: {
+            exact: "environment"
+          }
+        },
+
+        config,
+
+        function(decodedText) {
+
+          hasilScan(decodedText);
+
+        },
+
+        function(errorMessage) {
+
+          // Frame yang belum berhasil membaca QR diabaikan.
+
+        }
+
+      )
+
+      .then(function() {
+
+        document.getElementById("status").innerText =
+          "📷 Kamera aktif — arahkan ke QR Santri";
+
+      })
+
+      .catch(function(error) {
+
+        console.log(error);
+
+        /* Coba kamera belakang dengan mode biasa */
+
+        scanner.start(
+
+          {
+            facingMode: "environment"
+          },
+
+          config,
+
+          function(decodedText) {
+
+            hasilScan(decodedText);
+
+          },
+
+          function(errorMessage) {}
+
+        )
+
+        .then(function() {
+
+          document.getElementById("status").innerText =
+            "📷 Kamera aktif — arahkan ke QR Santri";
+
+        })
+
+        .catch(function(error2) {
+
+          tampilkanError(
+            "Kamera tidak dapat dibuka.<br><br>" +
+            "Pastikan izin kamera browser sudah diberikan."
+          );
+
+        });
+
+      });
+
+    }
+
+
+    /* =====================================================
+       ERROR KAMERA
+    ===================================================== */
+
+    function tampilkanError(pesan) {
+
+      const hasil =
+        document.getElementById("hasil");
+
+      hasil.className =
+        "hasil gagal";
+
+      hasil.innerHTML =
+
+        "❌ <strong>KAMERA TIDAK DAPAT DIBUKA</strong>" +
+
+        '<div class="detail">' +
+
+        pesan +
+
+        "</div>";
+
+      document.getElementById("status").innerText =
+        "⚠️ Kamera belum aktif";
+
+    }
+
+
+    /* =====================================================
+       AMANKAN TEXT
+    ===================================================== */
+
+    function aman(text) {
+
+      const div =
+        document.createElement("div");
+
+      div.textContent =
+        text == null ? "" : String(text);
+
+      return div.innerHTML;
+
+    }
+
+
+    /* =====================================================
+       KEMBALI KE DASHBOARD
+    ===================================================== */
+
+    function kembaliDashboard() {
+
+      if (scanner) {
+
+        scanner.stop()
+          .catch(function() {});
+
+      }
+
+
+      if (document.referrer) {
+
+        window.history.back();
+
+      }
+
+      else {
+
+        window.location.href =
+          APPS_SCRIPT_URL;
+
+      }
+
+    }
+
+
+    /* =====================================================
+       JALANKAN KAMERA
+    ===================================================== */
+
+    window.addEventListener(
+      "load",
+      function() {
+
+        setTimeout(function() {
+
+          mulaiScanner();
+
+        }, 500);
+
+      }
+    );
+
+  </script>
+
+</body>
+</html>
