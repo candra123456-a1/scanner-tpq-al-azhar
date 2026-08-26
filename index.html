@@ -589,181 +589,80 @@
        MULAI SCANNER
     ===================================================== */
 
-    function mulaiScanner() {
+   function mulaiScanner() {
 
+  const status = document.getElementById("status");
 
-      document.getElementById("status")
-        .innerText =
-        "📷 Meminta izin kamera...";
+  status.innerText = "📷 Meminta izin kamera...";
 
+  if (typeof Html5Qrcode === "undefined") {
 
-      if (
-        typeof Html5Qrcode ===
-        "undefined"
-      ) {
+    tampilkanError(
+      "Library scanner tidak berhasil dimuat."
+    );
 
+    return;
+  }
 
-        tampilkanError(
+  scanner = new Html5Qrcode("qr-reader");
 
-          "Library scanner tidak berhasil dimuat."
+  const config = {
+    fps: 10,
+    qrbox: {
+      width: 250,
+      height: 250
+    },
+    aspectRatio: 1.0
+  };
 
-        );
+  /*
+   * LANGSUNG MINTA KAMERA BELAKANG
+   * TANPA exact: environment
+   */
+  scanner.start(
 
+    { facingMode: "environment" },
 
-        return;
+    config,
 
-      }
+    function(decodedText) {
 
+      console.log("QR TERBACA:", decodedText);
 
-      scanner =
-        new Html5Qrcode(
-          "qr-reader"
-        );
+      hasilScan(decodedText);
 
+    },
 
-      const config = {
+    function(errorMessage) {
 
-        fps: 10,
-
-        qrbox: {
-
-          width: 250,
-
-          height: 250
-
-        },
-
-        aspectRatio: 1.0
-
-      };
-
-
-      scanner.start(
-
-        {
-
-          facingMode: {
-
-            exact:
-              "environment"
-
-          }
-
-        },
-
-        config,
-
-
-        function(decodedText) {
-
-
-          hasilScan(
-            decodedText
-          );
-
-
-        },
-
-
-        function(errorMessage) {
-
-          // Frame yang belum membaca QR diabaikan.
-
-        }
-
-      )
-
-
-      .then(function() {
-
-
-        document.getElementById("status")
-          .innerText =
-
-          "📷 Kamera aktif — arahkan ke QR Santri";
-
-
-      })
-
-
-      .catch(function(error) {
-
-
-        console.log(
-          "Kamera exact gagal:",
-          error
-        );
-
-
-        /* -----------------------------------------------
-           COBA KAMERA BELAKANG BIASA
-        ----------------------------------------------- */
-
-
-        scanner.start(
-
-          {
-
-            facingMode:
-              "environment"
-
-          },
-
-          config,
-
-
-          function(decodedText) {
-
-            hasilScan(
-              decodedText
-            );
-
-          },
-
-
-          function(errorMessage) {
-
-            // Abaikan frame gagal scan.
-
-          }
-
-        )
-
-
-        .then(function() {
-
-
-          document.getElementById("status")
-            .innerText =
-
-            "📷 Kamera aktif — arahkan ke QR Santri";
-
-
-        })
-
-
-        .catch(function(error2) {
-
-
-          console.log(
-            "Kamera gagal:",
-            error2
-          );
-
-
-          tampilkanError(
-
-            "Kamera tidak dapat dibuka.<br><br>" +
-
-            "Pastikan izin kamera browser sudah diberikan."
-
-          );
-
-        });
-
-      });
+      // Frame yang belum menemukan QR diabaikan.
 
     }
+
+  )
+
+  .then(function() {
+
+    status.innerText =
+      "📷 Kamera aktif — arahkan ke QR Santri";
+
+  })
+
+  .catch(function(error) {
+
+    console.error(
+      "KAMERA GAGAL:",
+      error
+    );
+
+    tampilkanError(
+      "Kamera tidak dapat dibuka.<br><br>" +
+      "Pastikan izin kamera browser sudah diberikan."
+    );
+
+  });
+
+}
 
 
     /* =====================================================
